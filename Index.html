@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimizador de Imágenes por Lote (ZIP)</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería JSZip para generar el archivo ZIP en el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* Estilos personalizados para la tipografía Inter y enfoque en la interfaz móvil */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Fondo claro */
+        }
+        .card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 5px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s ease-in-out;
+        }
+        .btn-primary {
+            background-color: #10b981; /* Esmeralda de Tailwind */
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #059669;
+        }
+        .btn-zip {
+            background-color: #3b82f6; /* Azul de Tailwind para la descarga en lote */
+            transition: background-color 0.2s;
+        }
+        .btn-zip:hover {
+            background-color: #2563eb;
+        }
+        .file-input-container {
+            border: 2px dashed #9ca3af;
+            background-color: #ffffff;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8 min-h-screen flex items-start justify-center">
+
+    <div id="app" class="w-full max-w-md bg-white rounded-xl card p-6 space-y-6">
+        <header class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">📦 Optimizador por Lote ZIP</h1>
+            <p class="text-gray-500 mt-1">Sube, optimiza y descarga todas tus fotos en un solo ZIP.</p>
+        </header>
+
+        <!-- 1. Carga de Imagen(es) -->
+        <div class="file-input-container p-6 rounded-lg text-center cursor-pointer hover:border-emerald-500">
+            <input type="file" id="imageInput" accept="image/*" multiple class="hidden" onchange="handleImageSelection(event)">
+            <label for="imageInput" class="block w-full h-full text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <p class="mt-2 text-sm font-medium text-gray-600" id="fileInstruction">Toca aquí para seleccionar una o más imágenes</p>
+            </label>
+        </div>
+
+        <!-- 2. Controles de Optimización -->
+        <div id="controls" class="space-y-4 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 pt-2 border-t border-gray-100">Ajustes Globales</h2>
+
+            <!-- Control de Calidad (Compresión) -->
+            <div>
+                <label for="qualitySlider" class="block text-sm font-medium text-gray-700">Calidad JPEG (0.1 - 1.0)</label>
+                <input type="range" id="qualitySlider" min="0.1" max="1.0" step="0.05" value="0.85" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg mt-1" oninput="updateControls()">
+                <p class="text-xs text-gray-500 mt-1">Valor: <span id="qualityValue">0.85</span></p>
+            </div>
+
+            <!-- Redimensionamiento (Max Width) -->
+            <div>
+                <label for="maxWidthInput" class="block text-sm font-medium text-gray-700">Ancho Máximo (px)</label>
+                <input type="number" id="maxWidthInput" value="1080" min="100" class="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500 mt-1" oninput="updateControls()">
+                <p class="text-xs text-gray-500 mt-1">Sugerido 1080px para redes sociales.</p>
+            </div>
+
+             <!-- Botón de Procesar -->
+            <button id="processButton" onclick="processAllImages()" class="btn-primary w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-50">
+                Optimizar <span id="imageCount"></span> Imágenes
+            </button>
+        </div>
+
+        <!-- 3. Resultados y Previsualización -->
+        <div id="results" class="hidden space-y-4 pt-4 border-t border-gray-100">
+            <h2 class="text-xl font-semibold text-gray-800">Resultados de Optimización</h2>
+
+            <!-- Botón de Descarga ZIP -->
+            <button id="zipButton" onclick="downloadAllAsZip()" class="btn-zip w-full text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                💾 Descargar Todas como ZIP
+            </button>
+            
+            <!-- CONTENEDOR DINÁMICO PARA LA LISTA DE RESULTADOS INDIVIDUALES -->
+            <div id="resultsList" class="space-y-3 mt-4">
+                <!-- Los resultados individuales se inyectarán aquí -->
+            </div>
+            
+            <!-- Resumen Global -->
+            <div id="summary" class="border-t pt-4 mt-4">
+                <p class="text-sm font-semibold text-gray-700">Resumen:</p>
+                <div class="flex justify-between text-sm mt-1">
+                    <p class="text-gray-500">Imágenes Procesadas:</p>
+                    <p class="text-gray-800 font-bold" id="processedCount">0</p>
+                </div>
+                <div class="flex justify-between text-sm mt-1">
+                    <p class="text-gray-500">Reducción Total Estimada:</p>
+                    <p class="text-emerald-600 font-bold" id="totalReduction">0%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de mensajes (para errores o estados) -->
+        <div id="messageArea" class="text-center text-red-500 text-sm mt-4 hidden"></div>
+
+    </div>
+
+    <!-- Canvas (Oculto) -->
+    <canvas id="imageCanvas" class="hidden"></canvas>
+
+    <script>
+        // Variables globales
+        let selectedFiles = []; // Array para almacenar los archivos de imagen originales
+        let processedImagesData = []; // Array para almacenar los Blobs de las imágenes optimizadas
+        
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Mapeo de elementos de la UI
+        const controlsDiv = document.getElementById('controls');
+        const resultsDiv = document.getElementById('results');
+        const resultsList = document.getElementById('resultsList');
+        const messageArea = document.getElementById('messageArea');
+        const fileInstruction = document.getElementById('fileInstruction');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValueSpan = document.getElementById('qualityValue');
+        const maxWidthInput = document.getElementById('maxWidthInput');
+        const processButton = document.getElementById('processButton');
+        const imageCountSpan = document.getElementById('imageCount');
+        const processedCountDisplay = document.getElementById('processedCount');
+        const totalReductionDisplay = document.getElementById('totalReduction');
+        const zipButton = document.getElementById('zipButton');
+
+        /**
+         * Maneja la selección de uno o más archivos de imagen.
+         * @param {Event} event - El evento de cambio de archivo.
+         */
+        function handleImageSelection(event) {
+            const files = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
+            
+            if (files.length === 0) {
+                showMessage("Por favor, selecciona al menos un archivo de imagen válido.", true);
+                return;
+            }
+
+            selectedFiles = files;
+            processedImagesData = []; // Limpiar datos procesados anteriores
+            const count = selectedFiles.length;
+            
+            fileInstruction.textContent = `${count} archivo(s) seleccionado(s).`;
+            imageCountSpan.textContent = count;
+            
+            showMessage("", false); // Limpia mensajes de error
+
+            // Mostrar controles de optimización
+            controlsDiv.classList.remove('hidden');
+            resultsDiv.classList.add('hidden');
+            resultsList.innerHTML = ''; // Limpiar resultados anteriores
+        }
+
+        /**
+         * Actualiza el valor mostrado del slider de calidad.
+         */
+        function updateControls() {
+            qualityValueSpan.textContent = qualitySlider.value;
+        }
+
+        /**
+         * Procesa una sola imagen.
+         * Retorna un objeto con el Blob optimizado y los metadatos.
+         * @param {File} file - El objeto File de la imagen.
+         * @param {number} quality - Calidad JPEG.
+         * @param {number} maxWidth - Ancho máximo de redimensionamiento.
+         * @returns {Promise<{blob: Blob, optimizedSize: number, originalSize: number, fileName: string}>}
+         */
+        function processSingleImage(file, quality, maxWidth) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let width = img.width;
+                        let height = img.height;
+
+                        // 1. Calcular nuevas dimensiones manteniendo el ratio
+                        if (width > maxWidth) {
+                            height = Math.round(height * (maxWidth / width));
+                            width = maxWidth;
+                        }
+
+                        // 2. Dibujar la imagen redimensionada en el canvas
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.clearRect(0, 0, width, height);
+                        // Redibujar la imagen en el nuevo tamaño
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const mimeType = 'image/jpeg'; 
+
+                        // 3. Obtener el resultado comprimido (Blob)
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                reject(new Error("Error al crear Blob comprimido."));
+                                return;
+                            }
+                            // 4. Resolver la promesa con los datos del resultado
+                            resolve({
+                                blob: blob,
+                                optimizedSize: blob.size,
+                                originalSize: file.size,
+                                fileName: file.name
+                            });
+                        }, mimeType, quality);
+                    };
+                    img.onerror = function() {
+                        reject(new Error("Error al cargar la imagen."));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.onerror = function() {
+                    reject(new Error("Error al leer el archivo."));
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+
+        /**
+         * Procesa todas las imágenes seleccionadas en lote.
+         */
+        async function processAllImages() {
+            if (selectedFiles.length === 0) {
+                showMessage("Por favor, selecciona imágenes primero.", true);
+                return;
+            }
+
+            // Limpiar datos y UI
+            processedImagesData = [];
+            resultsDiv.classList.add('hidden');
+            resultsList.innerHTML = ''; 
+            zipButton.disabled = true;
+
+            processButton.textContent = `Procesando 0 de ${selectedFiles.length}...`;
+            processButton.disabled = true;
+            showMessage(`Iniciando procesamiento de ${selectedFiles.length} imágenes...`, false, '#3b82f6'); 
+
+            const quality = parseFloat(qualitySlider.value);
+            const maxWidth = parseInt(maxWidthInput.value, 10);
+            
+            let totalOriginalSize = 0;
+            let totalOptimizedSize = 0;
+            let processedCount = 0;
+
+            // Procesar imágenes secuencialmente
+            for (const file of selectedFiles) {
+                try {
+                    const result = await processSingleImage(file, quality, maxWidth);
+
+                    totalOriginalSize += result.originalSize;
+                    totalOptimizedSize += result.optimizedSize;
+                    processedCount++;
+
+                    // Almacenar el resultado (Blob) para la descarga ZIP
+                    processedImagesData.push(result);
+
+                    // Inyectar resultado individual en la lista (usando el Blob guardado)
+                    displayIndividualResult(result);
+                    
+                    // Actualizar estado del botón de procesamiento
+                    processButton.textContent = `Procesando ${processedCount} de ${selectedFiles.length}...`;
+
+                } catch (error) {
+                    // Mostrar error para la imagen específica
+                    displayErrorResult(file.name, error.message);
+                    console.error(`Error procesando ${file.name}:`, error);
+                }
+            }
+
+            // 4. Actualizar la UI con el resumen de resultados
+            const reduction = 100 * (totalOriginalSize - totalOptimizedSize) / totalOriginalSize;
+            
+            processedCountDisplay.textContent = processedCount;
+            totalReductionDisplay.textContent = `${reduction.toFixed(1)}%`;
+            resultsDiv.classList.remove('hidden');
+            zipButton.disabled = false;
+
+            showMessage(`¡Optimización de lote finalizada! ${processedCount} imágenes procesadas.`, false, '#059669');
+
+            // Restaurar botón
+            processButton.textContent = `Optimizar ${selectedFiles.length} Imágenes`;
+            processButton.disabled = false;
+        }
+
+        /**
+         * Crea y descarga un archivo ZIP con todas las imágenes procesadas.
+         */
+        async function downloadAllAsZip() {
+            if (processedImagesData.length === 0) {
+                showMessage("No hay imágenes procesadas para descargar.", true);
+                return;
+            }
+
+            zipButton.textContent = "Creando ZIP, espera...";
+            zipButton.disabled = true;
+
+            const zip = new JSZip();
+            // Agregar cada blob al objeto ZIP
+            processedImagesData.forEach((data, index) => {
+                // Generar un nombre de archivo único para evitar colisiones
+                const baseName = data.fileName.replace(/\.[^/.]+$/, ""); // Quitar extensión
+                const finalFileName = `${baseName}_optimizada.jpg`; 
+                zip.file(finalFileName, data.blob);
+            });
+
+            try {
+                // Generar el contenido del ZIP como un Blob
+                const content = await zip.generateAsync({type:"blob"});
+
+                // Crear un enlace de descarga y simular un clic
+                const zipURL = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = zipURL;
+                a.download = `imagenes_optimizadas_${new Date().toISOString().slice(0, 10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(zipURL); // Limpiar la URL del objeto
+
+                showMessage(`Descarga del archivo ZIP iniciada con ${processedImagesData.length} imágenes.`, false, '#3b82f6');
+            } catch (error) {
+                showMessage(`Error al generar el ZIP: ${error.message}`, true);
+                console.error("Error generating ZIP:", error);
+            } finally {
+                zipButton.textContent = "💾 Descargar Todas como ZIP";
+                zipButton.disabled = false;
+            }
+        }
+
+        /**
+         * Inyecta el HTML para un resultado de imagen individual.
+         * @param {object} result - Objeto con los detalles de la imagen procesada.
+         */
+        function displayIndividualResult(result) {
+            const reduction = 100 * (result.originalSize - result.optimizedSize) / result.originalSize;
+            
+            // Crear una URL temporal para la descarga individual
+            const tempUrl = URL.createObjectURL(result.blob);
+
+            const itemHtml = `
+                <div class="p-3 border border-gray-100 rounded-lg shadow-sm bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
+                    <div class="flex-grow min-w-0">
+                        <p class="text-sm font-semibold text-gray-800 truncate">${result.fileName}</p>
+                        <div class="text-xs mt-1 space-y-1">
+                            <p class="text-gray-500">Original: <span class="font-medium text-gray-700">${formatBytes(result.originalSize)}</span></p>
+                            <p class="text-emerald-600">Optimizado: <span class="font-bold">${formatBytes(result.optimizedSize)}</span></p>
+                            <p class="text-blue-500">Reducción: <span class="font-bold">${reduction.toFixed(1)}%</span></p>
+                        </div>
+                    </div>
+                    <a href="${tempUrl}" download="optimizada_${result.fileName}" class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-4 rounded-full transition duration-150 whitespace-nowrap">
+                        Descargar
+                    </a>
+                </div>
+            `;
+            resultsList.insertAdjacentHTML('beforeend', itemHtml);
+
+            // Nota: Es importante revocar esta URL del objeto cuando ya no se necesite,
+            // pero en la práctica para una lista estática, se deja a la limpieza de la página.
+        }
+
+        /**
+         * Inyecta un mensaje de error para una imagen que falló.
+         * @param {string} fileName - Nombre del archivo.
+         * @param {string} message - Mensaje de error.
+         */
+        function displayErrorResult(fileName, message) {
+            const itemHtml = `
+                <div class="p-3 border border-red-200 rounded-lg shadow-sm bg-red-50">
+                    <p class="text-sm font-semibold text-red-700">❌ Error: ${fileName}</p>
+                    <p class="text-xs text-red-500">${message}</p>
+                </div>
+            `;
+            resultsList.insertAdjacentHTML('beforeend', itemHtml);
+        }
+
+        /**
+         * Muestra mensajes de estado o error.
+         * @param {string} msg - El mensaje a mostrar.
+         * @param {boolean} isError - Si es un mensaje de error (rojo).
+         * @param {string} color - Color personalizado si no es error.
+         */
+        function showMessage(msg, isError, color = '') {
+            messageArea.textContent = msg;
+            messageArea.classList.remove('hidden');
+            messageArea.style.color = isError ? '#ef4444' : color || '#059669'; // Tailwind red-500 or emerald-600
+            if (!msg) {
+                messageArea.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Formatea bytes a un formato legible (KB, MB).
+         * @param {number} bytes - El número de bytes.
+         * @returns {string} - Cadena formateada.
+         */
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Inicialización
+        window.onload = function() {
+            qualityValueSpan.textContent = qualitySlider.value;
+            imageCountSpan.textContent = '0';
+            zipButton.disabled = true; // Deshabilitar el ZIP hasta que haya resultados
+        };
+    </script>
+</body>
+</html>
