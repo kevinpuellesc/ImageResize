@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Optimizador Pro: Color, SEO y Lote</title>
+    <title>Optimizador Pro: Edición y Lote</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -12,91 +12,100 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; -webkit-tap-highlight-color: transparent; }
         .card { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
-        .temp-slider { background: linear-gradient(to right, #3b82f6, #f3f4f6, #f97316) !important; height: 10px; border-radius: 5px; appearance: none; width: 100%; }
-        .temp-slider::-webkit-slider-thumb { appearance: none; width: 24px; height: 24px; background: white; border: 2px solid #4b5563; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .center-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 14px; background: #9ca3af; pointer-events: none; z-index: 1; }
-        #previewContainer img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background: repeating-conic-gradient(#fff 0% 25%, #f3f4f6 0% 50%) 50% / 20px 20px; }
+        .temp-slider { background: linear-gradient(to right, #3b82f6, #f3f4f6, #f97316) !important; height: 8px; border-radius: 4px; appearance: none; width: 100%; }
+        .temp-slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: white; border: 2px solid #4b5563; border-radius: 50%; cursor: pointer; }
+        .center-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 12px; background: #9ca3af; pointer-events: none; z-index: 1; }
         
-        /* Estilos para la barra de progreso */
-        .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 0.75rem; overflow: hidden; }
-        .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.3s ease; }
+        #previewContainer { position: relative; width: 100%; display: flex; justify-content: center; }
+        #previewContainer img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); background: #eee; }
+        
+        /* Botón de comparación */
+        .compare-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; backdrop-filter: blur(4px); cursor: pointer; user-select: none; transition: all 0.2s; }
+        .compare-btn:active { background: rgba(0,0,0,0.9); transform: scale(0.95); }
+
+        .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 8px; overflow: hidden; }
+        .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.2s; }
     </style>
 </head>
-<body class="p-2 sm:p-6 min-h-screen flex items-center justify-center">
+<body class="p-2 sm:p-4 min-h-screen flex items-center justify-center">
 
-    <div id="app" class="w-full max-w-5xl bg-white rounded-2xl card overflow-hidden flex flex-col lg:flex-row">
+    <div id="app" class="w-full max-w-6xl bg-white rounded-2xl card overflow-hidden flex flex-col lg:flex-row">
         
-        <div class="w-full lg:w-5/12 p-5 sm:p-8 border-b lg:border-b-0 lg:border-r border-gray-100">
-            <header class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2"><span>📸</span> Portafolio Pro</h1>
+        <div class="w-full lg:w-1/3 p-5 sm:p-6 border-b lg:border-b-0 lg:border-r border-gray-100 overflow-y-auto max-h-screen custom-scroll">
+            <header class="mb-4">
+                <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📸</span> Portafolio Editor</h1>
             </header>
 
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div class="relative group">
                     <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleImageSelection(event)">
-                    <div class="p-6 border-2 border-dashed border-gray-300 rounded-xl text-center group-hover:border-emerald-500 group-hover:bg-emerald-50 transition-all">
-                        <p class="text-sm font-semibold text-gray-600" id="fileInstruction">Toca o arrastra tus fotos</p>
+                    <div class="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center group-hover:border-emerald-500 transition-all">
+                        <p class="text-xs font-semibold text-gray-600">Subir imágenes</p>
                     </div>
                 </div>
 
-                <div id="controls" class="hidden space-y-5">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Formato</label>
-                            <select id="outputFormat" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm" onchange="updateUI()">
-                                <option value="image/webp" selected>WebP</option>
+                <div id="controls" class="hidden space-y-4">
+                    <div class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ajustes de Luz y Color</h3>
+                        
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Brillo</span><span id="brightnessVal">100%</span></div>
+                            <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Contraste</span><span id="contrastVal">100%</span></div>
+                            <input type="range" id="contrastSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Saturación</span><span id="saturationVal">100%</span></div>
+                            <input type="range" id="saturationSlider" min="0" max="200" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
+                        </div>
+                        <div class="relative pt-2">
+                            <div class="flex justify-between text-[10px] mb-1"><span>Temperatura</span><span id="tempValue">0</span></div>
+                            <div class="relative flex items-center h-6">
+                                <div class="center-mark"></div>
+                                <input type="range" id="tempSlider" min="-100" max="100" value="0" class="temp-slider relative z-10" oninput="updateUI()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Detalle y Exportación</h3>
+                        
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Enfoque (Sharpen)</span><span id="sharpVal">0</span></div>
+                            <input type="range" id="sharpSlider" min="0" max="1" step="0.1" value="0" class="w-full accent-blue-500" oninput="updateUI()">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="outputFormat" class="p-2 bg-white border border-gray-200 rounded-lg text-xs" onchange="updateUI()">
+                                <option value="image/webp">WebP</option>
                                 <option value="image/jpeg">JPG</option>
-                                <option value="image/png">PNG</option>
                             </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Largo (px)</label>
-                            <input type="number" id="maxDimensionInput" value="1080" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm" oninput="updateUI()">
+                            <input type="number" id="maxDimensionInput" value="1080" class="p-2 border border-gray-200 rounded-lg text-xs">
                         </div>
                     </div>
 
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                            <label>Calidad</label><span id="qualityValue" class="text-emerald-600">0.85</span>
-                        </div>
-                        <input type="range" id="qualitySlider" min="0.1" max="1.0" step="0.05" value="0.85" class="w-full accent-emerald-500" oninput="updateUI()">
+                    <div id="progressSection" class="hidden space-y-2">
+                        <div class="progress-bar-container"><div id="progressBarFill" class="progress-bar-fill"></div></div>
+                        <p id="progressText" class="text-[10px] text-center font-bold text-gray-500 uppercase"></p>
                     </div>
 
-                    <div class="space-y-1 pt-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saturación</label>
-                        <input type="range" id="saturationSlider" min="0" max="200" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label id="tempLabel" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Temperatura</label>
-                        <div class="relative flex items-center h-8">
-                            <div class="center-mark"></div>
-                            <input type="range" id="tempSlider" min="-100" max="100" value="0" class="temp-slider relative z-10" oninput="updateUI()">
-                        </div>
-                    </div>
-
-                    <div id="progressSection" class="hidden space-y-2 pt-4 border-t border-gray-100">
-                        <div class="flex justify-between items-center text-xs font-bold text-gray-600">
-                            <span id="progressText">Procesando: 0 / 0</span>
-                            <span id="progressPercent">0%</span>
-                        </div>
-                        <div class="progress-bar-container">
-                            <div id="progressBarFill" class="progress-bar-fill"></div>
-                        </div>
-                    </div>
-
-                    <button id="processButton" onclick="processAllImages()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95">
-                        Procesar <span id="imageCount">0</span> Imágenes
+                    <button id="processButton" onclick="processAllImages()" class="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">
+                        Procesar <span id="imageCount">0</span> Fotos
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="previewArea" class="hidden w-full lg:w-7/12 bg-gray-50 p-5 sm:p-8 flex flex-col">
-            <div id="previewContainer" class="flex-grow flex items-center justify-center min-h-[300px]"></div>
-            <div id="results" class="hidden mt-8">
-                <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md mb-4">📦 Descargar Lote .ZIP</button>
-                <div id="resultsList" class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2"></div>
+        <div id="previewArea" class="hidden w-full lg:w-2/3 bg-gray-100 p-4 sm:p-8 flex flex-col justify-center items-center">
+            <div id="previewContainer">
+                <div class="compare-btn" onmousedown="showOriginal()" onmouseup="showProcessed()" ontouchstart="showOriginal()" ontouchend="showProcessed()">MANTENER PARA COMPARAR</div>
+            </div>
+
+            <div id="results" class="hidden w-full max-w-md mt-6">
+                <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4">Descargar Todo (.ZIP)</button>
+                <div id="resultsList" class="space-y-1 max-h-32 overflow-y-auto pr-2"></div>
             </div>
         </div>
     </div>
@@ -117,7 +126,6 @@
             document.getElementById('imageCount').textContent = files.length;
             document.getElementById('controls').classList.remove('hidden');
             document.getElementById('previewArea').classList.remove('hidden');
-            document.getElementById('progressSection').classList.add('hidden'); // Ocultar progreso al elegir nuevas fotos
             
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -129,20 +137,43 @@
         }
 
         function updateUI() {
-            document.getElementById('qualityValue').textContent = document.getElementById('qualitySlider').value;
+            document.getElementById('brightnessVal').innerText = document.getElementById('brightnessSlider').value + '%';
+            document.getElementById('contrastVal').innerText = document.getElementById('contrastSlider').value + '%';
+            document.getElementById('saturationVal').innerText = document.getElementById('saturationSlider').value + '%';
+            document.getElementById('tempValue').innerText = document.getElementById('tempSlider').value;
+            document.getElementById('sharpVal').innerText = document.getElementById('sharpSlider').value;
             generatePreview();
         }
 
         async function generatePreview() {
             if (!currentPreviewImage) return;
-            const res = await applyFilters(currentPreviewImage, {
-                quality: parseFloat(document.getElementById('qualitySlider').value),
-                maxDimension: 800,
+            const settings = getSettings();
+            settings.maxDimension = 800; // Preview rápido
+            const res = await applyFilters(currentPreviewImage, settings);
+            const imgHtml = `<img id="mainPreview" src="${URL.createObjectURL(res.blob)}">
+                             <div class="compare-btn" onmousedown="showOriginal()" onmouseup="showProcessed()" ontouchstart="showOriginal()" ontouchend="showProcessed()">COMPARAR</div>`;
+            document.getElementById('previewContainer').innerHTML = imgHtml;
+        }
+
+        function getSettings() {
+            return {
+                brightness: document.getElementById('brightnessSlider').value,
+                contrast: document.getElementById('contrastSlider').value,
                 saturation: document.getElementById('saturationSlider').value,
                 temperature: parseInt(document.getElementById('tempSlider').value),
+                sharpness: parseFloat(document.getElementById('sharpSlider').value),
+                quality: 0.85,
+                maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1080,
                 mime: document.getElementById('outputFormat').value
-            });
-            document.getElementById('previewContainer').innerHTML = `<img src="${URL.createObjectURL(res.blob)}">`;
+            };
+        }
+
+        function showOriginal() {
+            if(currentPreviewImage) document.getElementById('mainPreview').src = currentPreviewImage.src;
+        }
+
+        async function showProcessed() {
+            await generatePreview();
         }
 
         function applyFilters(img, s) {
@@ -151,65 +182,79 @@
                 const ratio = Math.min(s.maxDimension / width, s.maxDimension / height, 1);
                 width *= ratio; height *= ratio;
                 canvas.width = width; canvas.height = height;
-                ctx.filter = `saturate(${s.saturation}%)`;
+
+                // Aplicar filtros básicos (Brillo, Contraste, Saturación)
+                ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`;
                 ctx.drawImage(img, 0, 0, width, height);
+
+                // Aplicar Temperatura
                 if (s.temperature !== 0) {
-                    ctx.filter = 'none'; ctx.globalCompositeOperation = 'soft-light';
-                    const isWarm = s.temperature > 0;
-                    const alpha = Math.abs(s.temperature) / 200;
-                    ctx.fillStyle = isWarm ? `rgba(255, 150, 0, ${alpha})` : `rgba(0, 100, 255, ${alpha})`;
+                    ctx.filter = 'none';
+                    ctx.globalCompositeOperation = 'soft-light';
+                    const alpha = Math.abs(s.temperature) / 250;
+                    ctx.fillStyle = s.temperature > 0 ? `rgba(255, 150, 0, ${alpha})` : `rgba(0, 100, 255, ${alpha})`;
                     ctx.fillRect(0, 0, width, height);
                     ctx.globalCompositeOperation = 'source-over';
                 }
-                canvas.toBlob(blob => resolve({blob, width, height}), s.mime, s.quality);
+
+                // Aplicar Enfoque (Sharpen) mediante convolución simple si es > 0
+                if (s.sharpness > 0) {
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const sharpened = sharpen(imageData, s.sharpness);
+                    ctx.putImageData(sharpened, 0, 0);
+                }
+
+                canvas.toBlob(blob => resolve({blob}), s.mime, s.quality);
             });
+        }
+
+        // Algoritmo de Sharpen (Laplacian)
+        function sharpen(data, amount) {
+            const width = data.width;
+            const height = data.height;
+            const input = data.data;
+            const output = new Uint8ClampedArray(input.length);
+            const mix = amount;
+            
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    for (let c = 0; c < 3; c++) {
+                        const i = (y * width + x) * 4 + c;
+                        const val = input[i] * (1 + 4 * mix) - (
+                            input[i - 4] + input[i + 4] + 
+                            input[i - width * 4] + input[i + width * 4]
+                        ) * mix;
+                        output[i] = val;
+                    }
+                    output[(y * width + x) * 4 + 3] = input[(y * width + x) * 4 + 3];
+                }
+            }
+            return new ImageData(output, width, height);
         }
 
         async function processAllImages() {
             const total = selectedFiles.length;
-            const progressSection = document.getElementById('progressSection');
-            const progressText = document.getElementById('progressText');
-            const progressPercent = document.getElementById('progressPercent');
-            const progressBarFill = document.getElementById('progressBarFill');
-            const processBtn = document.getElementById('processButton');
-
-            // Preparar UI
-            processBtn.disabled = true;
-            progressSection.classList.remove('hidden');
-            processedImagesData = [];
+            const settings = getSettings();
+            settings.ext = settings.mime === 'image/jpeg' ? '.jpg' : '.webp';
+            
+            document.getElementById('progressSection').classList.remove('hidden');
             document.getElementById('resultsList').innerHTML = '';
-
-            const settings = {
-                quality: parseFloat(document.getElementById('qualitySlider').value),
-                maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1080,
-                saturation: document.getElementById('saturationSlider').value,
-                temperature: parseInt(document.getElementById('tempSlider').value),
-                mime: document.getElementById('outputFormat').value,
-                ext: document.getElementById('outputFormat').value === 'image/jpeg' ? '.jpg' : (document.getElementById('outputFormat').value === 'image/png' ? '.png' : '.webp')
-            };
+            processedImagesData = [];
 
             for (let i = 0; i < total; i++) {
-                // Actualizar barra y textos
-                const currentNum = i + 1;
-                const percent = Math.round((currentNum / total) * 100);
-                
-                progressText.innerText = `Procesando: ${currentNum} / ${total}`;
-                progressPercent.innerText = `${percent}%`;
-                progressBarFill.style.width = `${percent}%`;
+                const percent = Math.round(((i + 1) / total) * 100);
+                document.getElementById('progressBarFill').style.width = percent + '%';
+                document.getElementById('progressText').innerText = `Procesando ${i+1} de ${total}`;
 
                 const img = await loadImage(selectedFiles[i]);
-                const result = await applyFilters(img, settings);
-                const data = { ...result, fileName: selectedFiles[i].name, originalSize: selectedFiles[i].size, extension: settings.ext };
-                processedImagesData.push(data);
-                displayResult(data);
+                const res = await applyFilters(img, settings);
+                processedImagesData.push({blob: res.blob, fileName: selectedFiles[i].name, ext: settings.ext});
                 
-                // Pequeña pausa para que el navegador respire y actualice la UI
-                await new Promise(r => setTimeout(r, 10));
+                const item = `<div class="text-[10px] p-2 bg-white border mb-1 rounded flex justify-between"><span>${selectedFiles[i].name}</span><span class="text-emerald-500">OK</span></div>`;
+                document.getElementById('resultsList').insertAdjacentHTML('beforeend', item);
+                await new Promise(r => setTimeout(r, 20));
             }
-
             document.getElementById('results').classList.remove('hidden');
-            processBtn.disabled = false;
-            progressText.innerText = "¡Completado!";
         }
 
         function loadImage(file) {
@@ -220,23 +265,15 @@
             });
         }
 
-        function displayResult(res) {
-            const html = `<div class="p-3 border rounded-xl bg-white flex justify-between items-center text-[11px] shadow-sm mb-1">
-                <span class="truncate w-1/2 font-semibold text-gray-700">${res.fileName}</span>
-                <a href="${URL.createObjectURL(res.blob)}" download="opt_${res.fileName}" class="text-blue-500 font-bold px-3 py-1 bg-blue-50 rounded-lg">Bajar</a>
-            </div>`;
-            document.getElementById('resultsList').insertAdjacentHTML('beforeend', html);
-        }
-
         async function downloadAllAsZip() {
             const zip = new JSZip();
             processedImagesData.forEach((d, i) => {
-                zip.file(`img-${String(i+1).padStart(3, '0')}${d.extension}`, d.blob);
+                zip.file(`opt-${String(i+1).padStart(3, '0')}${d.ext}`, d.blob);
             });
             const content = await zip.generateAsync({type:"blob"});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(content);
-            a.download = "imagenes_optimizadas.zip";
+            a.download = "lote_optimizado.zip";
             a.click();
         }
     </script>
