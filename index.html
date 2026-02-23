@@ -40,8 +40,6 @@
             transition: all 0.2s;
         }
         .btn-download-single:hover { background-color: #059669; transform: translateY(-1px); }
-        .btn-download-single:active { transform: translateY(0); }
-        
         .badge-saving { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
     </style>
 </head>
@@ -82,14 +80,20 @@
                         </div>
                     </div>
 
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Definición</h3>
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Enfoque (Sharpen)</span><span id="sharpVal">0</span></div>
+                            <input type="range" id="sharpSlider" min="0" max="1" step="0.1" value="0" class="w-full accent-blue-500" oninput="updateUI()">
+                        </div>
+                    </div>
+
                     <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
                         <h3 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SEO y Exportación</h3>
-                        
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Plantilla de Nombre</label>
                             <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs outline-none focus:border-emerald-500">
                         </div>
-
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-gray-400 uppercase">Formato</label>
@@ -104,7 +108,6 @@
                                 <input type="number" id="maxDimensionInput" value="1080" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs">
                             </div>
                         </div>
-
                         <div>
                             <div class="flex justify-between text-[10px] mb-1">
                                 <label class="font-bold text-gray-400 uppercase">Calidad de Compresión</label>
@@ -185,6 +188,7 @@
             document.getElementById('brightnessVal').innerText = document.getElementById('brightnessSlider').value + '%';
             document.getElementById('contrastVal').innerText = document.getElementById('contrastSlider').value + '%';
             document.getElementById('tempValue').innerText = document.getElementById('tempSlider').value;
+            document.getElementById('sharpVal').innerText = document.getElementById('sharpSlider').value;
             document.getElementById('qualityVal').innerText = document.getElementById('qualitySlider').value + '%';
             generatePreview();
         }
@@ -202,6 +206,7 @@
                 brightness: document.getElementById('brightnessSlider').value,
                 contrast: document.getElementById('contrastSlider').value,
                 temperature: parseInt(document.getElementById('tempSlider').value),
+                sharpness: parseFloat(document.getElementById('sharpSlider').value),
                 quality: parseFloat(document.getElementById('qualitySlider').value) / 100,
                 maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1080,
                 mime: document.getElementById('outputFormat').value,
@@ -233,8 +238,32 @@
                     ctx.globalCompositeOperation = 'source-over';
                 }
 
+                if (s.sharpness > 0) {
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const sharpened = sharpen(imageData, s.sharpness);
+                    ctx.putImageData(sharpened, 0, 0);
+                }
+
                 canvas.toBlob(blob => resolve({blob}), s.mime, s.quality);
             });
+        }
+
+        function sharpen(data, amount) {
+            const width = data.width; const height = data.height; const input = data.data;
+            const output = new Uint8ClampedArray(input.length);
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    for (let c = 0; c < 3; c++) {
+                        const i = (y * width + x) * 4 + c;
+                        const val = input[i] * (1 + 4 * amount) - (
+                            input[i - 4] + input[i + 4] + input[i - width * 4] + input[i + width * 4]
+                        ) * amount;
+                        output[i] = val;
+                    }
+                    output[(y * width + x) * 4 + 3] = input[(y * width + x) * 4 + 3];
+                }
+            }
+            return new ImageData(output, width, height);
         }
 
         async function processAllImages() {
@@ -256,7 +285,6 @@
                 const img = await loadImage(originalFile);
                 const res = await applyFilters(img, settings);
                 
-                // Cálculo de ahorro
                 const savedBytes = originalFile.size - res.blob.size;
                 const percentSaved = Math.max(0, Math.round((savedBytes / originalFile.size) * 100));
                 
@@ -269,7 +297,7 @@
                 });
                 
                 const item = `
-                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white hover:bg-gray-50">
                         <div class="flex flex-col gap-1">
                             <span class="text-gray-700 font-bold truncate w-40">${finalName}${settings.ext}</span>
                             <div class="flex items-center gap-2">
@@ -277,9 +305,7 @@
                                 ${percentSaved > 0 ? `<span class="badge-saving">-${percentSaved}% peso</span>` : ''}
                             </div>
                         </div>
-                        <button onclick="downloadSingleImage(${i})" class="btn-download-single">
-                            ⬇ Guardar
-                        </button>
+                        <button onclick="downloadSingleImage(${i})" class="btn-download-single">⬇ Guardar</button>
                     </div>`;
                 document.getElementById('resultsList').insertAdjacentHTML('beforeend', item);
                 await new Promise(r => setTimeout(r, 20));
