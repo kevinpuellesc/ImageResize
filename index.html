@@ -3,40 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Optimizador Pro: Edición, SEO y sRGB</title>
+    <title>Optimizador Pro: Edición y SEO</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
         .card { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
         .temp-slider { background: linear-gradient(to right, #3b82f6, #f3f4f6, #f97316) !important; height: 8px; border-radius: 4px; appearance: none; width: 100%; }
         .temp-slider::-webkit-slider-thumb { appearance: none; width: 20px; height: 20px; background: white; border: 2px solid #4b5563; border-radius: 50%; cursor: pointer; }
         .center-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 12px; background: #9ca3af; pointer-events: none; z-index: 1; }
         
-        #previewContainer { position: relative; width: 100%; display: flex; justify-content: center; overflow: hidden; }
-        #previewContainer img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); background: repeating-conic-gradient(#fff 0% 25%, #f3f4f6 0% 50%) 50% / 20px 20px; }
+        #previewContainer img { max-width: 100%; height: auto; border-radius: 12px; background: repeating-conic-gradient(#fff 0% 25%, #f3f4f6 0% 50%) 50% / 20px 20px; }
         
-        .compare-btn { 
-            background: rgba(0,0,0,0.7); color: white; padding: 10px 16px; 
-            border-radius: 30px; font-size: 11px; font-weight: bold; 
-            backdrop-filter: blur(4px); cursor: pointer; user-select: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: all 0.2s;
-        }
-        .compare-btn:active { transform: scale(0.95); background: #000; }
-
         .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 8px; overflow: hidden; }
-        .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.2s; }
+        .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.3s ease; }
 
-        .btn-download-single {
-            background-color: #10b981; color: white; padding: 4px 10px;
-            border-radius: 8px; font-size: 10px; font-weight: bold; transition: all 0.2s;
-        }
-        .btn-download-single:hover { background-color: #059669; transform: translateY(-1px); }
-        .badge-saving { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
-        .badge-srgb { background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+        .btn-download-single { background-color: #10b981; color: white; padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: bold; }
+        .badge-srgb { background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 8px; }
     </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex items-center justify-center">
@@ -44,88 +30,57 @@
     <div id="app" class="w-full max-w-6xl bg-white rounded-2xl card overflow-hidden flex flex-col lg:flex-row">
         
         <div class="w-full lg:w-1/3 p-5 sm:p-6 border-b lg:border-b-0 lg:border-r border-gray-100 overflow-y-auto max-h-[90vh]">
-            <header class="mb-4">
-                <h1 class="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📸</span> Portafolio Studio</h1>
-            </header>
+            <header class="mb-4 text-xl font-bold text-gray-800">📸 Portafolio Studio</header>
 
             <div class="space-y-4">
                 <div class="relative group">
                     <input type="file" id="imageInput" accept="image/*" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="handleImageSelection(event)">
-                    <div class="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center group-hover:border-emerald-500 transition-all bg-gray-50">
+                    <div class="p-4 border-2 border-dashed border-gray-300 rounded-xl text-center bg-gray-50">
                         <p class="text-xs font-semibold text-gray-600" id="fileInstruction">Subir imágenes</p>
                     </div>
                 </div>
 
                 <div id="controls" class="hidden space-y-4">
-                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border">
                         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Luz y Color</h3>
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Brillo</span><span id="brightnessVal">100%</span></div>
-                            <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Contraste</span><span id="contrastVal">100%</span></div>
-                            <input type="range" id="contrastSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Saturación</span><span id="saturationVal">100%</span></div>
-                            <input type="range" id="saturationSlider" min="0" max="200" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
-                        </div>
+                        <div><input type="range" id="brightnessSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" onchange="updateUI()"></div>
+                        <div><input type="range" id="contrastSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" onchange="updateUI()"></div>
+                        <div><input type="range" id="saturationSlider" min="0" max="200" value="100" class="w-full accent-emerald-500" onchange="updateUI()"></div>
                     </div>
 
-                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border">
                         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Definición y Tono</h3>
                         <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Enfoque (Sharpen)</span><span id="sharpVal">0</span></div>
-                            <input type="range" id="sharpSlider" min="0" max="1" step="0.1" value="0" class="w-full accent-blue-500" oninput="updateUI()">
+                            <div class="flex justify-between text-[10px]"><span>Enfoque</span><span id="sharpVal">0</span></div>
+                            <input type="range" id="sharpSlider" min="0" max="1" step="0.1" value="0" class="w-full accent-blue-500" onchange="updateUI()">
                         </div>
                         <div class="relative pt-1">
-                            <div class="flex justify-between text-[10px] mb-1"><span>Temperatura</span><span id="tempValue">0</span></div>
-                            <div class="relative flex items-center h-6">
-                                <div class="center-mark"></div>
-                                <input type="range" id="tempSlider" min="-100" max="100" value="0" class="temp-slider relative z-10" oninput="updateUI()">
-                            </div>
+                            <input type="range" id="tempSlider" min="-100" max="100" value="0" class="temp-slider" onchange="updateUI()">
                         </div>
                     </div>
 
-                    <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SEO y Exportación</h3>
-                            <span class="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">AUTO sRGB</span>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase">Plantilla de Nombre</label>
-                            <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs outline-none focus:border-emerald-500">
-                        </div>
+                    <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100">
+                        <div class="flex justify-between items-center"><h3 class="text-[10px] font-bold text-emerald-600 uppercase">SEO y Exportación</h3><span class="badge-srgb">sRGB ACTIVO</span></div>
+                        <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 border rounded text-xs">
                         <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase">Formato</label>
-                                <select id="outputFormat" class="w-full p-2 mt-1 bg-white border border-gray-200 rounded text-xs" onchange="updateUI()">
-                                    <option value="image/webp" selected>WebP</option>
-                                    <option value="image/jpeg">JPEG</option>
-                                    <option value="image/png">PNG</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase">Largo Máx (px)</label>
-                                <input type="number" id="maxDimensionInput" value="1080" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs">
-                            </div>
+                            <select id="outputFormat" class="p-2 bg-white border rounded text-xs">
+                                <option value="image/webp">WebP</option>
+                                <option value="image/jpeg">JPEG</option>
+                            </select>
+                            <input type="number" id="maxDimensionInput" value="1200" class="p-2 border rounded text-xs">
                         </div>
                         <div>
-                            <div class="flex justify-between text-[10px] mb-1">
-                                <label class="font-bold text-gray-400 uppercase">Calidad de Compresión</label>
-                                <span id="qualityVal" class="text-emerald-600 font-bold">85%</span>
-                            </div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>Calidad</span><span id="qualityVal">85%</span></div>
                             <input type="range" id="qualitySlider" min="10" max="100" value="85" class="w-full accent-emerald-600" oninput="updateUI()">
                         </div>
                     </div>
 
                     <div id="progressSection" class="hidden space-y-2">
                         <div class="progress-bar-container"><div id="progressBarFill" class="progress-bar-fill"></div></div>
-                        <p id="progressText" class="text-[10px] text-center font-bold text-gray-500 uppercase"></p>
+                        <p id="progressText" class="text-[10px] text-center font-bold text-gray-400"></p>
                     </div>
 
-                    <button id="processButton" onclick="processAllImages()" class="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">
+                    <button id="processButton" onclick="processAllImages()" class="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl active:scale-95 transition-all">
                         Procesar <span id="imageCount">0</span> Fotos
                     </button>
                 </div>
@@ -134,16 +89,9 @@
 
         <div id="previewArea" class="hidden w-full lg:w-2/3 bg-gray-100 p-4 sm:p-8 flex flex-col items-center justify-center">
             <div id="previewContainer" class="w-full flex justify-center"></div>
-            <div class="mt-6 flex flex-col items-center gap-4 w-full">
-                <div class="compare-btn" onmousedown="showOriginal()" onmouseup="showProcessed()" ontouchstart="showOriginal()" ontouchend="showProcessed()">
-                    MANTENER PARA COMPARAR ORIGINAL
-                </div>
-                <div id="results" class="hidden w-full max-w-md bg-white p-4 rounded-xl shadow-sm border">
-                    <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2">
-                        <span>📦</span> Descargar Lote Optimizado (.zip)
-                    </button>
-                    <div id="resultsList" class="space-y-1 max-h-64 overflow-y-auto custom-scroll pr-1"></div>
-                </div>
+            <div id="results" class="hidden w-full max-w-md bg-white p-4 rounded-xl shadow-sm border mt-6">
+                <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4">Descargar Lote (.zip)</button>
+                <div id="resultsList" class="space-y-1 max-h-64 overflow-y-auto"></div>
             </div>
         </div>
     </div>
@@ -154,28 +102,13 @@
         let selectedFiles = [];
         let processedImagesData = [];
         let currentPreviewImage = null;
-        
-        // Configuración profesional: Forzamos el canvas a usar el espacio de color sRGB
         const canvas = document.getElementById('imageCanvas');
-        const ctx = canvas.getContext('2d', { 
-            colorSpace: 'srgb', 
-            willReadFrequently: true 
-        });
-
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-        }
+        const ctx = canvas.getContext('2d', { colorSpace: 'srgb' });
 
         function handleImageSelection(event) {
-            const files = Array.from(event.target.files).filter(f => f.type.startsWith('image/'));
-            if (files.length === 0) return;
-            selectedFiles = files;
-            document.getElementById('imageCount').textContent = files.length;
-            document.getElementById('fileInstruction').textContent = files.length + " fotos listas";
+            selectedFiles = Array.from(event.target.files).filter(f => f.type.startsWith('image/'));
+            if (selectedFiles.length === 0) return;
+            document.getElementById('imageCount').textContent = selectedFiles.length;
             document.getElementById('controls').classList.remove('hidden');
             document.getElementById('previewArea').classList.remove('hidden');
             
@@ -185,17 +118,21 @@
                 currentPreviewImage.onload = () => updateUI();
                 currentPreviewImage.src = e.target.result;
             };
-            reader.readAsDataURL(files[0]);
+            reader.readAsDataURL(selectedFiles[0]);
         }
 
         function updateUI() {
-            document.getElementById('brightnessVal').innerText = document.getElementById('brightnessSlider').value + '%';
-            document.getElementById('contrastVal').innerText = document.getElementById('contrastSlider').value + '%';
-            document.getElementById('saturationVal').innerText = document.getElementById('saturationSlider').value + '%';
-            document.getElementById('tempValue').innerText = document.getElementById('tempSlider').value;
             document.getElementById('sharpVal').innerText = document.getElementById('sharpSlider').value;
             document.getElementById('qualityVal').innerText = document.getElementById('qualitySlider').value + '%';
             generatePreview();
+        }
+
+        async function generatePreview() {
+            if (!currentPreviewImage) return;
+            const settings = getSettings();
+            settings.maxDimension = 600; // Preview ultra rápida
+            const res = await applyFilters(currentPreviewImage, settings);
+            document.getElementById('previewContainer').innerHTML = `<img src="${URL.createObjectURL(res.blob)}">`;
         }
 
         function getSettings() {
@@ -206,34 +143,27 @@
                 temperature: parseInt(document.getElementById('tempSlider').value),
                 sharpness: parseFloat(document.getElementById('sharpSlider').value),
                 quality: parseFloat(document.getElementById('qualitySlider').value) / 100,
-                maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1080,
+                maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1200,
                 mime: document.getElementById('outputFormat').value,
                 template: document.getElementById('filenameTemplate').value || 'img-{{num}}'
             };
         }
 
-        async function generatePreview() {
-            if (!currentPreviewImage) return;
-            const settings = getSettings();
-            settings.maxDimension = 800;
-            const res = await applyFilters(currentPreviewImage, settings);
-            document.getElementById('previewContainer').innerHTML = `<img id="mainPreview" src="${URL.createObjectURL(res.blob)}">`;
-        }
-
-        function showOriginal() { if(currentPreviewImage) document.getElementById('mainPreview').src = currentPreviewImage.src; }
-        async function showProcessed() { await generatePreview(); }
-
         function applyFilters(img, s) {
             return new Promise((resolve) => {
                 let { width, height } = img;
                 const ratio = Math.min(s.maxDimension / width, s.maxDimension / height, 1);
-                width *= ratio; height *= ratio;
-                canvas.width = width; canvas.height = height;
+                width = Math.floor(width * ratio);
+                height = Math.floor(height * ratio);
+                
+                canvas.width = width;
+                canvas.height = height;
 
-                // Al dibujar en un canvas inicializado como 'srgb', el navegador realiza la conversión de color automáticamente
+                // Aplicar filtros básicos
                 ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`;
                 ctx.drawImage(img, 0, 0, width, height);
 
+                // Temperatura
                 if (s.temperature !== 0) {
                     ctx.globalCompositeOperation = 'soft-light';
                     const alpha = Math.abs(s.temperature) / 250;
@@ -242,72 +172,61 @@
                     ctx.globalCompositeOperation = 'source-over';
                 }
 
+                // Sharpen (Solo si es necesario, es lo más lento)
                 if (s.sharpness > 0) {
                     const imageData = ctx.getImageData(0, 0, width, height);
-                    const sharpened = sharpen(imageData, s.sharpness);
-                    ctx.putImageData(sharpened, 0, 0);
+                    const output = new Uint8ClampedArray(imageData.data.length);
+                    const input = imageData.data;
+                    const amount = s.sharpness;
+                    for (let y = 1; y < height - 1; y++) {
+                        for (let x = 1; x < width - 1; x++) {
+                            for (let c = 0; c < 3; c++) {
+                                const i = (y * width + x) * 4 + c;
+                                output[i] = input[i] * (1 + 4 * amount) - (input[i - 4] + input[i + 4] + input[i - width * 4] + input[i + width * 4]) * amount;
+                            }
+                            output[(y * width + x) * 4 + 3] = input[(y * width + x) * 4 + 3];
+                        }
+                    }
+                    ctx.putImageData(new ImageData(output, width, height), 0, 0);
                 }
 
                 canvas.toBlob(blob => resolve({blob}), s.mime, s.quality);
             });
         }
 
-        function sharpen(data, amount) {
-            const width = data.width; const height = data.height; const input = data.data;
-            const output = new Uint8ClampedArray(input.length);
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
-                    for (let c = 0; c < 3; c++) {
-                        const i = (y * width + x) * 4 + c;
-                        const val = input[i] * (1 + 4 * amount) - (input[i - 4] + input[i + 4] + input[i - width * 4] + input[i + width * 4]) * amount;
-                        output[i] = val;
-                    }
-                    output[(y * width + x) * 4 + 3] = input[(y * width + x) * 4 + 3];
-                }
-            }
-            return new ImageData(output, width, height);
-        }
-
         async function processAllImages() {
             const total = selectedFiles.length;
             const settings = getSettings();
-            const formatLabels = {'image/webp': '.webp', 'image/jpeg': '.jpg', 'image/png': '.png'};
-            settings.ext = formatLabels[settings.mime];
-            
             document.getElementById('progressSection').classList.remove('hidden');
-            document.getElementById('resultsList').innerHTML = '';
             processedImagesData = [];
+            document.getElementById('resultsList').innerHTML = '';
 
             for (let i = 0; i < total; i++) {
-                const percent = Math.round(((i + 1) / total) * 100);
+                // Actualizar barra antes de empezar cada foto
+                const percent = Math.round((i / total) * 100);
                 document.getElementById('progressBarFill').style.width = percent + '%';
-                document.getElementById('progressText').innerText = `Exportando ${i+1}/${total}`;
+                document.getElementById('progressText').innerText = `Procesando ${i + 1} de ${total}...`;
 
-                const originalFile = selectedFiles[i];
-                const img = await loadImage(originalFile);
+                // Pequeña pausa para dejar que el navegador respire y actualice la UI
+                await new Promise(r => setTimeout(r, 50));
+
+                const img = await loadImage(selectedFiles[i]);
                 const res = await applyFilters(img, settings);
                 
-                const savedBytes = originalFile.size - res.blob.size;
-                const percentSaved = Math.max(0, Math.round((savedBytes / originalFile.size) * 100));
                 const finalName = settings.template.replace('{{num}}', String(i + 1).padStart(3, '0'));
+                const ext = settings.mime === 'image/webp' ? '.webp' : '.jpg';
                 
-                processedImagesData.push({ blob: res.blob, finalName, ext: settings.ext });
+                processedImagesData.push({ blob: res.blob, finalName, ext });
                 
-                const item = `
-                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white">
-                        <div class="flex flex-col gap-1">
-                            <span class="text-gray-700 font-bold truncate w-40">${finalName}${settings.ext}</span>
-                            <div class="flex items-center gap-1.5">
-                                <span class="badge-srgb text-[8px]">sRGB</span>
-                                <span class="text-gray-400 font-medium">${formatSize(res.blob.size)}</span>
-                                ${percentSaved > 0 ? `<span class="badge-saving">-${percentSaved}%</span>` : ''}
-                            </div>
-                        </div>
-                        <button onclick="downloadSingleImage(${index})" class="btn-download-single">⬇</button>
-                    </div>`;
-                document.getElementById('resultsList').insertAdjacentHTML('beforeend', item.replace('${index}', i));
-                await new Promise(r => setTimeout(r, 10));
+                document.getElementById('resultsList').insertAdjacentHTML('beforeend', `
+                    <div class="text-[10px] p-2 border-b flex justify-between bg-white">
+                        <span>${finalName}${ext}</span>
+                        <span class="text-emerald-500 font-bold">✓ Listo</span>
+                    </div>`);
             }
+            
+            document.getElementById('progressBarFill').style.width = '100%';
+            document.getElementById('progressText').innerText = "¡Completado!";
             document.getElementById('results').classList.remove('hidden');
         }
 
@@ -319,22 +238,14 @@
             });
         }
 
-        function downloadSingleImage(index) {
-            const data = processedImagesData[index];
-            const a = document.createElement('a');
-            const url = URL.createObjectURL(data.blob);
-            a.href = url; a.download = `${data.finalName}${data.ext}`; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
         async function downloadAllAsZip() {
             const zip = new JSZip();
-            processedImagesData.forEach((d) => zip.file(`${d.finalName}${d.ext}`, d.blob));
+            processedImagesData.forEach(d => zip.file(`${d.finalName}${d.ext}`, d.blob));
             const content = await zip.generateAsync({type:"blob"});
             const a = document.createElement('a');
-            const url = URL.createObjectURL(content);
-            a.href = url; a.download = "portafolio_srgb.zip"; a.click();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            a.href = URL.createObjectURL(content);
+            a.download = "lote_sRGB.zip";
+            a.click();
         }
     </script>
 </body>
