@@ -29,6 +29,17 @@
 
         .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 8px; overflow: hidden; }
         .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.2s; }
+
+        /* Estilo para el botón de descarga individual */
+        .btn-download-single {
+            background-color: #10b981;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+        .btn-download-single:hover { background-color: #059669; }
     </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex items-center justify-center">
@@ -116,7 +127,7 @@
 
         <div id="previewArea" class="hidden w-full lg:w-2/3 bg-gray-100 p-4 sm:p-8 flex flex-col items-center justify-center">
             <div id="previewContainer" class="w-full flex justify-center">
-                </div>
+            </div>
             
             <div class="mt-6 flex flex-col items-center gap-4 w-full">
                 <div class="compare-btn" 
@@ -127,9 +138,9 @@
 
                 <div id="results" class="hidden w-full max-w-md bg-white p-4 rounded-xl shadow-sm border">
                     <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2">
-                        <span>📦</span> Descargar Lote Optimizado
+                        <span>📦</span> Descargar Lote Optimizado (.zip)
                     </button>
-                    <div id="resultsList" class="space-y-1 max-h-40 overflow-y-auto custom-scroll"></div>
+                    <div id="resultsList" class="space-y-1 max-h-60 overflow-y-auto custom-scroll"></div>
                 </div>
             </div>
         </div>
@@ -208,8 +219,6 @@
                 width *= ratio; height *= ratio;
                 canvas.width = width; canvas.height = height;
 
-                // Nota: Al dibujar en canvas y exportar a Blob, los metadatos EXIF/GPS NO se incluyen. 
-                // Esto garantiza la privacidad por defecto.
                 ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`;
                 ctx.drawImage(img, 0, 0, width, height);
 
@@ -267,13 +276,27 @@
 
                 const img = await loadImage(selectedFiles[i]);
                 const res = await applyFilters(img, settings);
+                
+                // Calcular nombre final basado en plantilla
+                const finalName = settings.template.replace('{{num}}', String(i + 1).padStart(3, '0'));
+                
                 processedImagesData.push({
                     blob: res.blob, 
-                    originalName: selectedFiles[i].name, 
+                    originalName: selectedFiles[i].name,
+                    finalName: finalName,
                     ext: settings.ext
                 });
                 
-                const item = `<div class="text-[10px] p-2 border-b flex justify-between bg-white"><span>${selectedFiles[i].name}</span><span class="text-emerald-500 font-bold">OPTIMIZADA</span></div>`;
+                const item = `
+                    <div class="text-[10px] p-2 border-b flex justify-between items-center bg-white">
+                        <div class="flex flex-col">
+                            <span class="text-gray-400 truncate w-32">${selectedFiles[i].name}</span>
+                            <span class="text-emerald-500 font-bold uppercase">Optimizado</span>
+                        </div>
+                        <button onclick="downloadSingleImage(${i})" class="btn-download-single flex items-center gap-1">
+                            <span>⬇</span> Guardar
+                        </button>
+                    </div>`;
                 document.getElementById('resultsList').insertAdjacentHTML('beforeend', item);
                 await new Promise(r => setTimeout(r, 20));
             }
@@ -288,13 +311,20 @@
             });
         }
 
+        // NUEVA: Descarga individual
+        function downloadSingleImage(index) {
+            const data = processedImagesData[index];
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(data.blob);
+            a.download = `${data.finalName}${data.ext}`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
         async function downloadAllAsZip() {
             const zip = new JSZip();
-            const template = document.getElementById('filenameTemplate').value || 'portfolio-{{num}}';
-            
-            processedImagesData.forEach((d, i) => {
-                const finalName = template.replace('{{num}}', String(i + 1).padStart(3, '0'));
-                zip.file(`${finalName}${d.ext}`, d.blob);
+            processedImagesData.forEach((d) => {
+                zip.file(`${d.finalName}${d.ext}`, d.blob);
             });
             
             const content = await zip.generateAsync({type:"blob"});
@@ -302,6 +332,7 @@
             a.href = URL.createObjectURL(content);
             a.download = "portfolio_completo.zip";
             a.click();
+            URL.revokeObjectURL(a.href);
         }
     </script>
 </body>
