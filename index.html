@@ -30,16 +30,19 @@
         .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 9999px; height: 8px; overflow: hidden; }
         .progress-bar-fill { background-color: #10b981; height: 100%; width: 0%; transition: width 0.2s; }
 
-        /* Estilo para el botón de descarga individual */
         .btn-download-single {
             background-color: #10b981;
             color: white;
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
             font-size: 10px;
+            font-weight: bold;
             transition: all 0.2s;
         }
-        .btn-download-single:hover { background-color: #059669; }
+        .btn-download-single:hover { background-color: #059669; transform: translateY(-1px); }
+        .btn-download-single:active { transform: translateY(0); }
+        
+        .badge-saving { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
     </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex items-center justify-center">
@@ -61,7 +64,7 @@
 
                 <div id="controls" class="hidden space-y-4">
                     <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Luz y Color</h3>
+                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ajustes Visuales</h3>
                         <div>
                             <div class="flex justify-between text-[10px] mb-1"><span>Brillo</span><span id="brightnessVal">100%</span></div>
                             <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
@@ -69,10 +72,6 @@
                         <div>
                             <div class="flex justify-between text-[10px] mb-1"><span>Contraste</span><span id="contrastVal">100%</span></div>
                             <input type="range" id="contrastSlider" min="50" max="150" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Saturación</span><span id="saturationVal">100%</span></div>
-                            <input type="range" id="saturationSlider" min="0" max="200" value="100" class="w-full accent-emerald-500" oninput="updateUI()">
                         </div>
                         <div class="relative pt-1">
                             <div class="flex justify-between text-[10px] mb-1"><span>Temperatura</span><span id="tempValue">0</span></div>
@@ -83,20 +82,14 @@
                         </div>
                     </div>
 
-                    <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                        <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Definición</h3>
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-1"><span>Enfoque (Sharpen)</span><span id="sharpVal">0</span></div>
-                            <input type="range" id="sharpSlider" min="0" max="1" step="0.1" value="0" class="w-full accent-blue-500" oninput="updateUI()">
-                        </div>
-                    </div>
-
-                    <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100">
+                    <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
                         <h3 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SEO y Exportación</h3>
+                        
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Plantilla de Nombre</label>
-                            <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs outline-none focus:border-emerald-500" placeholder="ej. boda-{{num}}">
+                            <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs outline-none focus:border-emerald-500">
                         </div>
+
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-gray-400 uppercase">Formato</label>
@@ -107,9 +100,17 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase">Largo (px)</label>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase">Largo Máx (px)</label>
                                 <input type="number" id="maxDimensionInput" value="1080" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs">
                             </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1">
+                                <label class="font-bold text-gray-400 uppercase">Calidad de Compresión</label>
+                                <span id="qualityVal" class="text-emerald-600 font-bold">85%</span>
+                            </div>
+                            <input type="range" id="qualitySlider" min="10" max="100" value="85" class="w-full accent-emerald-600" oninput="updateUI()">
                         </div>
                     </div>
 
@@ -126,8 +127,7 @@
         </div>
 
         <div id="previewArea" class="hidden w-full lg:w-2/3 bg-gray-100 p-4 sm:p-8 flex flex-col items-center justify-center">
-            <div id="previewContainer" class="w-full flex justify-center">
-            </div>
+            <div id="previewContainer" class="w-full flex justify-center"></div>
             
             <div class="mt-6 flex flex-col items-center gap-4 w-full">
                 <div class="compare-btn" 
@@ -140,7 +140,7 @@
                     <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2">
                         <span>📦</span> Descargar Lote Optimizado (.zip)
                     </button>
-                    <div id="resultsList" class="space-y-1 max-h-60 overflow-y-auto custom-scroll"></div>
+                    <div id="resultsList" class="space-y-1 max-h-64 overflow-y-auto custom-scroll pr-1"></div>
                 </div>
             </div>
         </div>
@@ -154,6 +154,14 @@
         let currentPreviewImage = null;
         const canvas = document.getElementById('imageCanvas');
         const ctx = canvas.getContext('2d');
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
 
         function handleImageSelection(event) {
             const files = Array.from(event.target.files).filter(f => f.type.startsWith('image/'));
@@ -176,16 +184,15 @@
         function updateUI() {
             document.getElementById('brightnessVal').innerText = document.getElementById('brightnessSlider').value + '%';
             document.getElementById('contrastVal').innerText = document.getElementById('contrastSlider').value + '%';
-            document.getElementById('saturationVal').innerText = document.getElementById('saturationSlider').value + '%';
             document.getElementById('tempValue').innerText = document.getElementById('tempSlider').value;
-            document.getElementById('sharpVal').innerText = document.getElementById('sharpSlider').value;
+            document.getElementById('qualityVal').innerText = document.getElementById('qualitySlider').value + '%';
             generatePreview();
         }
 
         async function generatePreview() {
             if (!currentPreviewImage) return;
             const settings = getSettings();
-            settings.maxDimension = 800; // Preview veloz
+            settings.maxDimension = 800;
             const res = await applyFilters(currentPreviewImage, settings);
             document.getElementById('previewContainer').innerHTML = `<img id="mainPreview" src="${URL.createObjectURL(res.blob)}">`;
         }
@@ -194,10 +201,8 @@
             return {
                 brightness: document.getElementById('brightnessSlider').value,
                 contrast: document.getElementById('contrastSlider').value,
-                saturation: document.getElementById('saturationSlider').value,
                 temperature: parseInt(document.getElementById('tempSlider').value),
-                sharpness: parseFloat(document.getElementById('sharpSlider').value),
-                quality: 0.85,
+                quality: parseFloat(document.getElementById('qualitySlider').value) / 100,
                 maxDimension: parseInt(document.getElementById('maxDimensionInput').value) || 1080,
                 mime: document.getElementById('outputFormat').value,
                 template: document.getElementById('filenameTemplate').value || 'img-{{num}}'
@@ -208,9 +213,7 @@
             if(currentPreviewImage) document.getElementById('mainPreview').src = currentPreviewImage.src;
         }
 
-        async function showProcessed() {
-            await generatePreview();
-        }
+        async function showProcessed() { await generatePreview(); }
 
         function applyFilters(img, s) {
             return new Promise((resolve) => {
@@ -219,11 +222,10 @@
                 width *= ratio; height *= ratio;
                 canvas.width = width; canvas.height = height;
 
-                ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`;
+                ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%)`;
                 ctx.drawImage(img, 0, 0, width, height);
 
                 if (s.temperature !== 0) {
-                    ctx.filter = 'none';
                     ctx.globalCompositeOperation = 'soft-light';
                     const alpha = Math.abs(s.temperature) / 250;
                     ctx.fillStyle = s.temperature > 0 ? `rgba(255, 150, 0, ${alpha})` : `rgba(0, 100, 255, ${alpha})`;
@@ -231,32 +233,8 @@
                     ctx.globalCompositeOperation = 'source-over';
                 }
 
-                if (s.sharpness > 0) {
-                    const imageData = ctx.getImageData(0, 0, width, height);
-                    const sharpened = sharpen(imageData, s.sharpness);
-                    ctx.putImageData(sharpened, 0, 0);
-                }
-
                 canvas.toBlob(blob => resolve({blob}), s.mime, s.quality);
             });
-        }
-
-        function sharpen(data, amount) {
-            const width = data.width; const height = data.height; const input = data.data;
-            const output = new Uint8ClampedArray(input.length);
-            for (let y = 1; y < height - 1; y++) {
-                for (let x = 1; x < width - 1; x++) {
-                    for (let c = 0; c < 3; c++) {
-                        const i = (y * width + x) * 4 + c;
-                        const val = input[i] * (1 + 4 * amount) - (
-                            input[i - 4] + input[i + 4] + input[i - width * 4] + input[i + width * 4]
-                        ) * amount;
-                        output[i] = val;
-                    }
-                    output[(y * width + x) * 4 + 3] = input[(y * width + x) * 4 + 3];
-                }
-            }
-            return new ImageData(output, width, height);
         }
 
         async function processAllImages() {
@@ -274,27 +252,33 @@
                 document.getElementById('progressBarFill').style.width = percent + '%';
                 document.getElementById('progressText').innerText = `Procesando ${i+1} de ${total}`;
 
-                const img = await loadImage(selectedFiles[i]);
+                const originalFile = selectedFiles[i];
+                const img = await loadImage(originalFile);
                 const res = await applyFilters(img, settings);
                 
-                // Calcular nombre final basado en plantilla
+                // Cálculo de ahorro
+                const savedBytes = originalFile.size - res.blob.size;
+                const percentSaved = Math.max(0, Math.round((savedBytes / originalFile.size) * 100));
+                
                 const finalName = settings.template.replace('{{num}}', String(i + 1).padStart(3, '0'));
                 
                 processedImagesData.push({
                     blob: res.blob, 
-                    originalName: selectedFiles[i].name,
                     finalName: finalName,
                     ext: settings.ext
                 });
                 
                 const item = `
-                    <div class="text-[10px] p-2 border-b flex justify-between items-center bg-white">
-                        <div class="flex flex-col">
-                            <span class="text-gray-400 truncate w-32">${selectedFiles[i].name}</span>
-                            <span class="text-emerald-500 font-bold uppercase">Optimizado</span>
+                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white hover:bg-gray-50 transition-colors">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-gray-700 font-bold truncate w-40">${finalName}${settings.ext}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-400">${formatSize(res.blob.size)}</span>
+                                ${percentSaved > 0 ? `<span class="badge-saving">-${percentSaved}% peso</span>` : ''}
+                            </div>
                         </div>
-                        <button onclick="downloadSingleImage(${i})" class="btn-download-single flex items-center gap-1">
-                            <span>⬇</span> Guardar
+                        <button onclick="downloadSingleImage(${i})" class="btn-download-single">
+                            ⬇ Guardar
                         </button>
                     </div>`;
                 document.getElementById('resultsList').insertAdjacentHTML('beforeend', item);
@@ -311,14 +295,14 @@
             });
         }
 
-        // NUEVA: Descarga individual
         function downloadSingleImage(index) {
             const data = processedImagesData[index];
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(data.blob);
+            const url = URL.createObjectURL(data.blob);
+            a.href = url;
             a.download = `${data.finalName}${data.ext}`;
             a.click();
-            URL.revokeObjectURL(a.href);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
         async function downloadAllAsZip() {
@@ -326,13 +310,13 @@
             processedImagesData.forEach((d) => {
                 zip.file(`${d.finalName}${d.ext}`, d.blob);
             });
-            
             const content = await zip.generateAsync({type:"blob"});
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(content);
-            a.download = "portfolio_completo.zip";
+            const url = URL.createObjectURL(content);
+            a.href = url;
+            a.download = "lote_optimizado.zip";
             a.click();
-            URL.revokeObjectURL(a.href);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
     </script>
 </body>
