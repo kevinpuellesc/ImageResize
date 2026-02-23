@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Optimizador Pro: Edición, SEO y Lote</title>
+    <title>Optimizador Pro: Edición, SEO y sRGB</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -36,6 +36,7 @@
         }
         .btn-download-single:hover { background-color: #059669; transform: translateY(-1px); }
         .badge-saving { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+        .badge-srgb { background-color: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
     </style>
 </head>
 <body class="p-2 sm:p-4 min-h-screen flex items-center justify-center">
@@ -88,7 +89,10 @@
                     </div>
 
                     <div class="space-y-3 bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
-                        <h3 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SEO y Exportación</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SEO y Exportación</h3>
+                            <span class="text-[9px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded">AUTO sRGB</span>
+                        </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-400 uppercase">Plantilla de Nombre</label>
                             <input type="text" id="filenameTemplate" value="portfolio-{{num}}" class="w-full p-2 mt-1 border border-gray-200 rounded text-xs outline-none focus:border-emerald-500">
@@ -136,7 +140,7 @@
                 </div>
                 <div id="results" class="hidden w-full max-w-md bg-white p-4 rounded-xl shadow-sm border">
                     <button onclick="downloadAllAsZip()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-4 flex items-center justify-center gap-2">
-                        <span>📦</span> Descargar Lote (.zip)
+                        <span>📦</span> Descargar Lote Optimizado (.zip)
                     </button>
                     <div id="resultsList" class="space-y-1 max-h-64 overflow-y-auto custom-scroll pr-1"></div>
                 </div>
@@ -150,8 +154,13 @@
         let selectedFiles = [];
         let processedImagesData = [];
         let currentPreviewImage = null;
+        
+        // Configuración profesional: Forzamos el canvas a usar el espacio de color sRGB
         const canvas = document.getElementById('imageCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { 
+            colorSpace: 'srgb', 
+            willReadFrequently: true 
+        });
 
         function formatSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -221,6 +230,7 @@
                 width *= ratio; height *= ratio;
                 canvas.width = width; canvas.height = height;
 
+                // Al dibujar en un canvas inicializado como 'srgb', el navegador realiza la conversión de color automáticamente
                 ctx.filter = `brightness(${s.brightness}%) contrast(${s.contrast}%) saturate(${s.saturation}%)`;
                 ctx.drawImage(img, 0, 0, width, height);
 
@@ -271,7 +281,7 @@
             for (let i = 0; i < total; i++) {
                 const percent = Math.round(((i + 1) / total) * 100);
                 document.getElementById('progressBarFill').style.width = percent + '%';
-                document.getElementById('progressText').innerText = `Procesando ${i+1}/${total}`;
+                document.getElementById('progressText').innerText = `Exportando ${i+1}/${total}`;
 
                 const originalFile = selectedFiles[i];
                 const img = await loadImage(originalFile);
@@ -284,17 +294,18 @@
                 processedImagesData.push({ blob: res.blob, finalName, ext: settings.ext });
                 
                 const item = `
-                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white hover:bg-gray-50">
+                    <div class="text-[10px] p-3 border-b flex justify-between items-center bg-white">
                         <div class="flex flex-col gap-1">
                             <span class="text-gray-700 font-bold truncate w-40">${finalName}${settings.ext}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-400">${formatSize(res.blob.size)}</span>
-                                ${percentSaved > 0 ? `<span class="badge-saving">-${percentSaved}% peso</span>` : ''}
+                            <div class="flex items-center gap-1.5">
+                                <span class="badge-srgb text-[8px]">sRGB</span>
+                                <span class="text-gray-400 font-medium">${formatSize(res.blob.size)}</span>
+                                ${percentSaved > 0 ? `<span class="badge-saving">-${percentSaved}%</span>` : ''}
                             </div>
                         </div>
-                        <button onclick="downloadSingleImage(${i})" class="btn-download-single">⬇</button>
+                        <button onclick="downloadSingleImage(${index})" class="btn-download-single">⬇</button>
                     </div>`;
-                document.getElementById('resultsList').insertAdjacentHTML('beforeend', item);
+                document.getElementById('resultsList').insertAdjacentHTML('beforeend', item.replace('${index}', i));
                 await new Promise(r => setTimeout(r, 10));
             }
             document.getElementById('results').classList.remove('hidden');
@@ -322,7 +333,7 @@
             const content = await zip.generateAsync({type:"blob"});
             const a = document.createElement('a');
             const url = URL.createObjectURL(content);
-            a.href = url; a.download = "lote_optimizado.zip"; a.click();
+            a.href = url; a.download = "portafolio_srgb.zip"; a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
     </script>
